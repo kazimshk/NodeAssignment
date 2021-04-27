@@ -1,0 +1,35 @@
+GET http://localhost:3000/users HTTP/1.1
+###
+GET http://localhost:3000/users/posts HTTP/1.1
+
+###
+GET http://localhost:3000/users/60813470352bdb49202f6884 HTTP/1.1
+
+###
+POST http://localhost:3000/users HTTP/1.1
+Content-Type: application/json
+
+{
+    "name": "ne",
+    "email": "ne@gmail.com",
+    "posts":[
+        {"title": "foo"}]
+}
+###
+POST http://localhost:3000/users/post HTTP/1.1
+Content-Type: application/json
+
+{
+    "title": "nee",
+    "desc": "new post"
+}
+###
+PUT http://localhost:3000/users/60813e0239b9cc416468818a HTTP/1.1
+Content-Type: application/json
+
+{
+    "email": "ahmad123@gmail.com"
+}
+###
+
+DELETE http://localhost:3000/users/608138b8f133df5854ff6c9f HTTP/1.1
