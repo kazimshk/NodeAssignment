@@ -38,25 +38,14 @@ router.post("/:id/posts", async (req, res) => {
   const user = await User.findById(userId);
   newPost.postedBy = user;
   await newPost.save();
-  // //
-  // await newPost.save().then(newPost => {
-  //     Post.findByIdAndUpdate(userId, {
-  //       $push: { posts: newPost.id }
-  //     })
-  //       .then(() => {
-  //         res.status(200);
-  //       })
-  //       .catch(err => {
-  //         res.status(500).json({ message: err });
-  //       })
-  // //
-  // });
   user.posts.push(newPost);
   await user.save();
   res.status(201).json(newPost);
 });
 
 ///'users/follower/following/'
+// First param id will take the follower ID
+//Second param will take the id of user which he wants to follow
 router.post("/:id/:ids", async (req, res) => {
   const followingId = req.params.id;
   const followerId = req.params.ids;
@@ -71,7 +60,7 @@ router.post("/:id/:ids", async (req, res) => {
   res.status(201).json(user);
 });
 
-//display all the users who are following
+//display all the users who are following the given id
 router.get("/:id/followers", async (req, res) => {
   const userId = req.params.id;
   const user = await User.findById(userId).populate("followers");
@@ -79,7 +68,7 @@ router.get("/:id/followers", async (req, res) => {
   res.status(200).json(user.followers);
 });
 
-//display all the users who are following
+//display all the users whom he is following
 router.get("/:id/following", async (req, res) => {
   const userId = req.params.id;
   const user = await User.findById(userId).populate("following");
@@ -167,6 +156,7 @@ router.delete("/:id", async (req, res) => {
     res.json({ message: err });
   }
 });
+//It takes the ID of user and returns with the jwt token for authentication
 router.get("/:id/get-token", async (req, res) => {
   try {
     user = await User.findById(req.params.id);
@@ -182,7 +172,7 @@ router.get("/:id/get-token", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
+//It takes the Id of user and gets the token in Authorization and then Authorize the user to login
 router.get("/:id/login", AuthToken, async (req, res) => {
   try {
     user = await User.findById(req.params.id);
@@ -196,3 +186,17 @@ router.get("/:id/login", AuthToken, async (req, res) => {
 });
 
 module.exports = router;
+
+// //
+// await newPost.save().then(newPost => {
+//     Post.findByIdAndUpdate(userId, {
+//       $push: { posts: newPost.id }
+//     })
+//       .then(() => {
+//         res.status(200);
+//       })
+//       .catch(err => {
+//         res.status(500).json({ message: err });
+//       })
+// //
+// });
