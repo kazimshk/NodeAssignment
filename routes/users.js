@@ -6,12 +6,15 @@ const User = require("../models/user");
 const Post = require("../models/posts");
 const AuthToken = require("../middleware/Auth_Token");
 const jwt = require("jsonwebtoken");
+const { json } = require("express");
 app.use(express.json());
+ //const socket = io('http://localhost:3000');
 
-//IT will display all the users
+//It will display all the users
 router.get("/", async (req, res) => {
   try {
     const users = await User.find();
+    // socket.emit('new-user-joined','helloworld');
     res.json(users);
   } catch (err) {
     console.log(err);
@@ -60,6 +63,7 @@ router.post("/:id/:ids", async (req, res) => {
   res.status(201).json(user);
 });
 
+
 //display all the users who are following the given id
 router.get("/:id/followers", async (req, res) => {
   const userId = req.params.id;
@@ -76,16 +80,88 @@ router.get("/:id/following", async (req, res) => {
   res.status(200).json(user.following);
 });
 
-//It will display all of the posts
-router.get("/posts", async (req, res) => {
-  try {
-    const posts = await Post.find();
-    res.json(posts);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
 
+//It will display the feed
+router.get("/:id/feed", async (req, res) => {
+    const userId = req.params.id;
+    var allPosts= " ";
+    const user = await User.findById(userId);//.populate("followers");
+    for(data in user.followers){
+            const follower_user=await User.findById(user.followers[data]);
+            //console.log(follower_user.posts);
+            for(postData in follower_user.posts){
+                //console.log(follower_user.posts[postData]);
+                var posts = await Post.findById(follower_user.posts[postData]);
+                //res.status(200).json(posts);
+                try {
+                  //res.send(posts);
+                  const jsonToStr = JSON.stringify(posts);
+                  allPosts += ' '+jsonToStr; 
+                } catch (err) {
+                  res.status(404).send(err);
+                }
+                 console.log(allPosts);
+
+                
+              
+            }
+        //console.log(user.followers);
+    }
+    //const jsonPost = JSON.parse(allPosts);
+   //console.log(typeof(jsonPost));
+  // const aa = JSON.parse(allPosts);
+  
+  res.send(allPosts);
+
+    //console.log("user", user);
+   // res.status(200).json(user.followers);
+   //res.status(200);
+   
+   //res.json(posts);
+  });
+
+//It will display the feed sorted (most recent first)
+router.get("/:id/feed/sorted", async (req, res) => {
+    const userId = req.params.id;
+    var postDates = '';
+    const user = await User.findById(userId);//.populate("followers");
+    for(data in user.followers){
+            const follower_user=await User.findById(user.followers[data]);
+            //console.log(follower_user.posts);
+            for(postData in follower_user.posts){
+                //console.log(follower_user.posts[postData]);
+                var posts = await Post.findById(follower_user.posts[postData]);
+                //res.status(200).json(posts);
+                //console.log(posts.postDate);
+                postDates += ' '+posts.postDate;
+
+                // router.route("/getDocuments").get(function(req, res) {
+                //   detail
+                //     .find({}, function(err, result) {
+                //       if (err) {
+                //         console.log(err);
+                //       } else {
+                //         res.json(result);
+                //       }
+                //     })
+                //     .sort({ age: 1 });
+                //});
+            }
+           // posts.postDate.sort( compare );
+        //console.log(user.followers);
+    }
+    console.log(postDates);
+  });
+
+  function compare( a, b ) {
+    if ( a.postDate < b.postDate ){
+      return -1;
+    }
+    if ( a.postDate < b.postDate ){
+      return 1;
+    }
+    return 0;
+  }
 //It gets the id of user and display their result
 router.get("/:id", async (req, res) => {
   try {
@@ -101,13 +177,16 @@ router.get("/:id", async (req, res) => {
 
 //It takes the params of user and create a new user
 router.post("/", async (req, res) => {
+  try {
   const users = new User({
     name: req.body.name,
     email: req.body.email,
+    password: req.body.password
   });
-  try {
-    // const accessToken = users.generateAuthToken();
-    // console.log(accessToken);
+  
+     const accessToken = users.generateAuthToken();
+     console.log(accessToken);
+     users.token= accessToken;
     const newUser = await users.save();
     res.status(201).json(newUser);
   } catch (err) {
@@ -148,13 +227,17 @@ router.patch("/:id", async (req, res) => {
 });
 
 //It takes the id of user and then delete that user
-router.delete("/:id", async (req, res) => {
-  try {
-    const removed_user = await User.deleteOne({ _id: req.params.id });
-    res.json(removed_user);
-  } catch (err) {
-    res.json({ message: err });
-  }
+router.delete("/:id",AuthToken, async (req, res) => {
+  user = await User.findById(req.params.id);
+    if (user === null) {
+      res.status(404).json({ message: "Cant find any User with this id" })
+    };
+  try{
+        const removed_user = await User.deleteOne({ _id: req.params.id });
+        res.json(removed_user);
+      } catch (err) {
+        res.json({ message: err });
+      }   
 });
 //It takes the ID of user and returns with the jwt token for authentication
 router.get("/:id/get-token", async (req, res) => {
