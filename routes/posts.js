@@ -3,15 +3,14 @@ const router = express.Router();
 const User = require("../models/user");
 const Post = require("../models/posts");
 
-
-
 //it takes the params and do pagination
-router.get("/pagination", async(req, res) => {
+router.get("/pagination", async (req, res) => {
   try {
     const page = req.query.page;
     const limit = req.query.limit;
-    console.log(page+" "+ limit);
-    const posts = await Post.find().limit(limit * 1)
+    console.log(page + " " + limit);
+    const posts = await Post.find()
+      .limit(limit * 1)
       .skip((page - 1) * limit);
     res.send(posts);
   } catch (err) {
@@ -40,8 +39,6 @@ router.get("/", async (req, res) => {
   }
 });
 module.exports = router;
-
-
 
 //It takes the params of post and create a new post
 // router.post("/", async (req, res) => {

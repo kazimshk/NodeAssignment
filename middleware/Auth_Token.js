@@ -12,7 +12,7 @@ function authenticateToken(req, res, next) {
   console.log(Token);
   //console.log(process.env.ACCESS_TOKEN_SECRET);
   if (Token === null) return res.sendStatus(401);
-  console.log("usr token: "+process.env.ACCESS_TOKEN_SECRET);
+  console.log("usr token: " + process.env.ACCESS_TOKEN_SECRET);
   jwt.verify(Token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
     if (err) {
       return res.sendStatus(403);

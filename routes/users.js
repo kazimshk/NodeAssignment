@@ -14,13 +14,9 @@ const NodeCache = require("node-cache");
 const myCache = new NodeCache();
 
 //It will display all the users
-router.get("/", async (req, res) => {
+router.get("/", AuthToken, async (req, res) => {
   try {
     const users = await User.find();
-
-    const io = req.app.get("socketio");
-    const data1 = "inside api";
-    io.sockets.emit("messageapi", data1);
     res.json(users);
   } catch (err) {
     console.log(err);
@@ -30,9 +26,12 @@ router.get("/", async (req, res) => {
 
 // It will display all the posts of a user
 //It takes the user id
-router.get("/:id/posts", async (req, res) => {
+router.get("/:id/posts", AuthToken, async (req, res) => {
   const userId = req.params.id;
   const user = await User.findById(userId).populate("posts");
+  if (user == null) {
+    return res.status(404).send("There is no post");
+  }
   console.log("user", user);
   const io = req.app.get("socketio");
   res.status(200).json(user.posts);
@@ -40,7 +39,7 @@ router.get("/:id/posts", async (req, res) => {
 
 //It takes the users id and parameter of post and create a new post
 //and then link the newly created post with that user
-router.post("/:id/posts", async (req, res) => {
+router.post("/:id/posts", AuthToken, async (req, res) => {
   const userId = req.params.id;
   console.log(userId);
   const newPost = new Post(req.body);
@@ -78,7 +77,7 @@ router.post("/:id/posts", async (req, res) => {
 ///'users/follower/following/'
 // First param id will take the follower ID
 //Second param will take the id of user which he wants to follow
-router.post("/:id/:ids", async (req, res) => {
+router.post("/:id/:ids", AuthToken, async (req, res) => {
   const followerId = req.params.id;
   const followingId = req.params.ids;
   let flag = 1;
@@ -108,39 +107,45 @@ router.post("/:id/:ids", async (req, res) => {
 });
 
 //display all the users who are following the given id
-router.get("/:id/followers", async (req, res) => {
-  const userId = req.params.id;
-  const user = await User.findById(userId).populate("followers");
-  console.log("user", user);
-  res.status(200).json(user.followers);
-});
+router.get(
+  "/:id/followers",
+  /*AuthToken,*/ async (req, res) => {
+    const userId = req.params.id;
+    const user = await User.findById(userId).populate("followers");
+    console.log("user", user);
+    res.status(200).json(user.followers);
+  }
+);
 
 //Get user Id and Id of that user whom he wants to unfollow
-router.put("/:id/:idunfollow/unfollow", async (req, res) => {
-  const userId = req.params.id;
-  const userIdunfollow = req.params.idunfollow;
-  let flag = 0;
-  const user = await User.findById(userId);
-  for (count in user.following) {
-    var following_users = await User.findById(user.following[count]);
-    console.log(following_users.id);
-    if (following_users.id == userIdunfollow) {
-      flag = 1;
+router.put(
+  "/:id/:idunfollow/unfollow",
+  /*AuthToken,*/ async (req, res) => {
+    const userId = req.params.id;
+    const userIdunfollow = req.params.idunfollow;
+    let flag = 0;
+    const user = await User.findById(userId);
+    for (count in user.following) {
+      var following_users = await User.findById(user.following[count]);
+      console.log(following_users.id);
+      if (following_users.id == userIdunfollow) {
+        flag = 1;
+      }
     }
-  }
-  if (flag == 0) {
-    return res.status(404).send("That user is not following");
-  }
-  user.following.remove(userIdunfollow);
+    if (flag == 0) {
+      return res.status(404).send("That user is not following");
+    }
+    user.following.remove(userIdunfollow);
 
-  const updated_user = await User.updateOne(
-    { _id: req.params.id },
-    {
-      $set: { following: user.following },
-    }
-  );
-  res.status(200).json("Successfully unfollowed the " + userIdunfollow);
-});
+    const updated_user = await User.updateOne(
+      { _id: req.params.id },
+      {
+        $set: { following: user.following },
+      }
+    );
+    res.status(200).json("Successfully unfollowed the " + userIdunfollow);
+  }
+);
 
 Array.prototype.remove = function () {
   var what,
@@ -157,36 +162,42 @@ Array.prototype.remove = function () {
 };
 
 //display all the users whom he is following
-router.get("/:id/following", async (req, res) => {
-  const userId = req.params.id;
-  const user = await User.findById(userId).populate("following");
-  console.log("user", user);
+router.get(
+  "/:id/following",
+  /*AuthToken,*/ async (req, res) => {
+    const userId = req.params.id;
+    const user = await User.findById(userId).populate("following");
+    console.log("user", user);
 
-  res.status(200).json(user.following);
-});
-
-router.get("/:id/feed", async (req, res) => {
-  const userId = req.params.id;
-  var postsArr = new Array();
-  const user = await User.findById(userId);
-  for (count in user.followers) {
-    const follower_user = await User.findById(user.followers[count]);
-    for (postData in follower_user.posts) {
-      var posts = await Post.findById(follower_user.posts[postData]);
-      try {
-        postsArr.push(posts);
-      } catch (err) {
-        res.status(404).send(err);
-      }
-      console.log(postsArr);
-    }
+    res.status(200).json(user.following);
   }
-  myCache.set("usersId", userId);
-  console.log("Value set new");
-  const io = req.app.get("socketio");
-  io.sockets.emit("messagess", postsArr);
-  res.send(postsArr);
-});
+);
+
+router.get(
+  "/:id/feed",
+  /*AuthToken,*/ async (req, res) => {
+    const userId = req.params.id;
+    var postsArr = new Array();
+    const user = await User.findById(userId);
+    for (count in user.followers) {
+      const follower_user = await User.findById(user.followers[count]);
+      for (postData in follower_user.posts) {
+        var posts = await Post.findById(follower_user.posts[postData]);
+        try {
+          postsArr.push(posts);
+        } catch (err) {
+          res.status(404).send(err);
+        }
+        console.log(postsArr);
+      }
+    }
+    myCache.set("usersId", userId);
+    console.log("Value set new");
+    const io = req.app.get("socketio");
+    io.sockets.emit("messagess", postsArr);
+    res.send(postsArr);
+  }
+);
 
 //It will display the feed sorted (most recent first)
 router.get("/:id/feed/sorted", async (req, res) => {
@@ -230,6 +241,7 @@ router.post("/", async (req, res) => {
       email: req.body.email,
       password: req.body.password,
     });
+    users.password = await bcrypt.hash(req.body.password, 4);
     const newUser = await users.save();
     res.status(201).json(newUser);
     res.send("USER REGISTERED SUCCESSFULLY");
@@ -306,8 +318,9 @@ router.get(
     const userId = req.params.id;
     try {
       const password = req.body.password;
+      console.log("here is the passsss: " + password);
       const foundUser = await User.findById(userId);
-      console.log(foundUser);
+      // console.log(foundUser);
       if (!password) {
         return res
           .status(400)
@@ -320,7 +333,7 @@ router.get(
       } else {
         const isMatch = await bcrypt.compare(password, foundUser.password);
         const token = await foundUser.generateAuthToken();
-        console.log(token);
+        //console.log(token);
         if (!isMatch) {
           res.status(400).send({ error: "Password doesn't match" });
         } else {
