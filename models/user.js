@@ -36,11 +36,6 @@ const userSchema = new mongoose.Schema({
   }
 },
   
-  // joinigDate: {
-  //   type: Date,
-  //   required: true,
-  //   default: Date.now,
-  // },
   token:{
     type:String
   },
@@ -72,28 +67,30 @@ userSchema.pre('save', async function(next){
   console.log("running");
   next();
 });
-userSchema.methods.toJSON = function(){
-  const obj = this.toObject();
-  delete obj.password;
-  delete obj.token;
-  return obj;  
-}
+// userSchema.methods.toJSON = function(){
+//   const obj = this.toObject();
+//   delete obj.password;
+//   delete obj.token;
+//   return obj;  
+// }
 
-userSchema.pre('remove', async function(next){
+// userSchema.pre('remove', async function(next){
 
-  await posts.deleteMany({
-    "postedBy": this.id
-  })
-  console.log("remove working");
-  next();
-});
+//   await posts.deleteMany({
+//     "postedBy": this.id
+//   })
+//   console.log("remove working");
+//   next();
+// });
 
-userSchema.methods.generateAuthToken = function () {
+userSchema.methods.generateAuthToken =async function () {
   console.log("env :" + process.env.ACCESS_TOKEN_SCERET);
   const token = jwt.sign(
     { _id: this._id },
-    "c23409cjo23kj209hfd0jdsk203u0rj230rhi2ckj312" /*process.env.ACCESS_TOKEN_SCERET*/
+     "c23409cjo23kj209hfd0jdsk203u0rj230rhi2ckj312" /*process.env.ACCESS_TOKEN_SCERET*/
   );
+  this.token = token;
+  await this.save();
   console.log("env :" + process.env.ACCESS_TOKEN_SCERET);
   console.log("methods token:  " + token);
   return token;

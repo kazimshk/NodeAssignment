@@ -7,23 +7,30 @@
 
 <body>
     <input type="text" class="message">
-    <button onclick="sendMessage()">Send Message</button>
+    <button onclick="sendMessage()">Send ID to see feed</button>
     <h1></h1>
     <script>
         const socket = io('http://localhost:3000');
-        socket.on('connection');
-
+        socket.on('connect',()=>{
+            console.log("User connected" + socket.id);
+        }
+        );
+        
         socket.on('message',(data)=>{
            // document.querySelector('h1').innerHTML = data;
            console.log(data);
         })
         socket.on('messagess',(data2)=>{
-           // document.querySelector('h1').innerHTML = data;
            console.log(data2);
         })
         socket.on('newmessage',(data1)=>{
-           // document.querySelector('h1').innerHTML = data;
            console.log(data1);
+        })
+        socket.on('messageapi',(data3)=>{
+           console.log(data3);
+        })
+        socket.on('addpost',(data4)=>{
+           console.log(data4);
         })
         const sendMessage = ()=>{
             const messageInput=document.querySelector('.message');

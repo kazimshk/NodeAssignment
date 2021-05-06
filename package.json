@@ -16,7 +16,9 @@
     "http": "0.0.1-security",
     "jquery": "^3.6.0",
     "jsonwebtoken": "^8.5.1",
+    "memory-cache": "^0.2.0",
     "mongoose": "^5.12.5",
+    "node-cache": "^5.1.2",
     "socket.io": "^4.0.1",
     "validator": "^13.6.0"
   },
