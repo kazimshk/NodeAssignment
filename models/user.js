@@ -63,23 +63,25 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.pre("deleteOne", async function (next) {
-  await posts.deleteMany({
-    postedBy: this.id,
-  });
-  console.log("remove working");
+userSchema.pre("deleteOne", { document: true }, async function (next) {
+  const removed_posts = await posts.deleteMany({ postedBy: this._id });
   next();
 });
 
+userSchema.methods.toJSON = function () {
+  const userObj = this.toObject();
+  delete userObj.password;
+  delete userObj.token;
+  return userObj;
+}
+
 userSchema.methods.generateAuthToken = async function () {
   const token = jwt.sign(
-    { _id: this._id },
-    "c23409cjo23kj209hfd0jdsk203u0rj230rhi2ckj312" /*process.env.ACCESS_TOKEN_SCERET*/
+    { user: this },
+    process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' }
   );
   this.token = token;
   await this.save();
-  console.log("env :" + process.env.ACCESS_TOKEN_SCERET);
-  console.log("methods token:  " + token);
   return token;
 };
 

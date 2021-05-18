@@ -11,30 +11,17 @@
     <script>
       const socket = io("http://localhost:3000");
       socket.on("connect", () => {
-        console.log("User connected" + socket.id);
+        console.log("User connected client" + socket.id);
       });
 
-      socket.on("message", (data) => {
-        // document.querySelector('h1').innerHTML = data;
-        console.log(data);
-      });
       socket.on("messagess", (data2) => {
         console.log(data2);
       });
-      socket.on("newmessage", (data1) => {
-        console.log(data1);
-      });
-      socket.on("messageapi", (data3) => {
-        console.log(data3);
-      });
+      
       socket.on("addpost", (data4) => {
         console.log(data4);
       });
-      const sendMessage = () => {
-        const messageInput = document.querySelector(".message");
-        const message = messageInput.value;
-        socket.emit("message", message);
-      };
+     
     </script>
   </body>
 </html>

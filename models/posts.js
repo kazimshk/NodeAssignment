@@ -10,15 +10,16 @@ const postsSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  postDate: {
-    type: Date,
-    required: true,
-    default: Date.now,
-  },
   postedBy: {
     type: Schema.Types.ObjectId,
     ref: "user",
   },
+  postedByName: {
+    type: String
+  }
+},
+{
+  timestamps: true,
 });
 
 module.exports = mongoose.model("posts", postsSchema);
