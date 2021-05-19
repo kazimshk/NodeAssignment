@@ -62,20 +62,18 @@ router.post("/login", async (req, res) => {
 
 //Logout ROute
 router.patch("/logout", AuthToken, async (req, res) => {
-  try {
     const user = req.user.user;
     const userId = user._id;
-    const updated_user = await User.updateOne(
-      { _id: userId },
-      {
-        $set: { token: "" },
-      }
-    );
-    if (updated_user.nModified === 1) {
-      return res.status(200).send("Successfully Logout");
-    } else {
-      return res.status(502).send("Still logged In, Cannot log out");
-    }
+    try {
+      await User.findByIdAndUpdate(userId,
+        { token: "" }, function (err, result) {
+          if (error) {
+            return res.status(500).send(error);
+          } else {
+            return res.status(200).send("Successfully Logout");
+          }
+        }
+      );
   } catch (err) {
     res.send({ message: err });
   }
@@ -83,22 +81,21 @@ router.patch("/logout", AuthToken, async (req, res) => {
 
 //It takes email as parameter and update the email of current user
 router.patch("/", AuthToken, async (req, res) => {
+
+  const user = req.user.user;
+  const userId = user._id;
   try {
-    const user = req.user.user;
-    const userId = user._id;
-    const updated_user = await User.updateOne(
-      { _id: userId },
-      {
-        $set: { email: req.body.email },
+    await User.findByIdAndUpdate(userId,
+      { email: req.body.email }, function (err, result) {
+        if (error) {
+          return res.status(500).send(error);
+        } else {
+          return res.status(200).send(result);
+        }
       }
     );
-    if (updated_user.nModified === 1) {
-      return res.status(200).send("Successfully Updated");
-    } else {
-      return res.status(200).send("Not updated");
-    }
   } catch (err) {
-    res.send({ message: err });
+    res.status(500).send({ message: err });
   }
 });
 
@@ -110,15 +107,17 @@ router.delete("/", AuthToken, async (req, res) => {
     return res.status(404).send({ message: "Cant find any User" });
   }
   try {
-    const remove_user = await User.findOne({ _id: userId });
-    if (remove_user === null) {
-      return res.send("No user with this Id");
-    } else {
-      await remove_user.deleteOne();
-      return res.status(200).send("Successfully Deleted");
-    }
+    await User.findById(userId ,function (err, result) {
+      if (error) {
+        res.status(500).send(error);
+      }
+      else{
+         remove_user.deleteOne();
+        return res.status(200).send(result);
+      }
+    });
   } catch (err) {
-    res.send({ message: err });
+    res.status(500).send({ message: err });
   }
 });
 

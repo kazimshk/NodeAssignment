@@ -35,63 +35,74 @@ router.post("/newpost", AuthToken, async (req, res) => {
   let existingFollowers;
 
   const user = await User.findById(userId);
+  console.log(user.followers);
   newPost.postedBy = user;
   await newPost.save();
   user.posts.push(newPost);
   await user.save();
 
   const myCache = req.app.get("myCache");
-  if (myCache.has("userId")) {
-    const usersId = myCache.get("userId");
-    existingFollowers = user.followers.some((currentFollowers) => { //Check whether that user is a follower or not
-      return currentFollowers._id == usersId;
-    });
+  const sockets = myCache.get("sockets");
+
+  sockets.forEach((socket) => {
+    existingFollowers = user.followers.some((currentFollower) => {
+      return currentFollower == socket.userid;
+    })
     if (existingFollowers) {
       const io = req.app.get("socketio");
-      const socketId = myCache.get("socketId");
+      socketId = socket.socketid;
       io.to(socketId).emit("addpost", newPost);
     }
-  }
-  res.status(201).send(newPost);
-}
-);
+    res.status(201).send(newPost);
+  });
+
+});
+
 //Update post Route
 //It takes the title of post and update the description 
-router.patch("/update", AuthToken, async (req, res) => {
+router.patch("/update/:postid", AuthToken, async (req, res) => {
+
+  const user = req.user.user;
+  const userId = user._id;
+  const postId = req.params.postid;
   try {
-    const user = req.user.user;
-    const userId = user._id;
-    const postTitle = req.body.title;
-    const updated_post = await Post.updateOne(
-      { $and: [{ postedBy: userId }, { title: postTitle }] },
-      {
-        $set: { desc: req.body.desc },
+    Post.findById(postId, function (err, result) {
+      if (err) {
+        res.send(err);
       }
-    );
-    if (updated_post.nModified === 1) {
-      return res.status(200).send("Successfully Updated");
-    } else {
-      return res.status(200).send("Not updated");
-    }
+      else {
+        if (result.postedBy == userId) {
+          result.desc = req.body.desc;
+          result.save();
+          return res.status(200).send(result);
+        } else {
+          return res.send("Not Allowed to update");
+        }
+      }
+    });
   } catch (err) {
     res.send({ message: err });
   }
 });
 
-//Delete post Route
+// Delete post Route
 // it takes the title of post and delete it
-router.delete("/post", AuthToken, async (req, res) => {
+router.delete("/post/:postid", AuthToken, async (req, res) => {
+  const user = req.user.user;
+  const userId = user._id;
+  const postTitle = req.body.title;
+  const postId = req.params.postid;
   try {
-    const user = req.user.user;
-    const userId = user._id;
-    const postTitle = req.body.title;
     const deleted_post = await Post.deleteOne(
-      { $and: [{ postedBy: userId }, { title: postTitle }] });
-    if (deleted_post.deletedCount === 1) {
-      return res.status(200).send("Successfully Deleted");
-    } else {
-      return res.status(200).send("Not Deleted");
-    }
+      { $and: [{ postedBy: userId }, { _id: postId }] },
+      function (err, result) {
+        if (err) {
+          res.send(err);
+        }
+        else {
+          return res.status(200).send(result);
+        }
+      });
   } catch (err) {
     res.send({ message: err });
   }
@@ -135,6 +146,7 @@ router.get("/post", AuthToken, async (req, res) => {
 
 });
 
+
 router.get("/feed", AuthToken, async (req, res) => {
   const authUser = req.user.user;
   const userId = authUser._id;
@@ -155,26 +167,37 @@ router.get("/feed", AuthToken, async (req, res) => {
       populate: {
         path: "posts",
         options: {
-          select: { title:1, desc: 1 }
+          select: { title: 1, desc: 1 }
         }
       }
     })
     .select("name")
   res.send(result.following);
-try { 
+  try {
     const myCache = req.app.get("myCache");
-    if (myCache.has("socketId")) {
-      myCache.set("userId", userId);
+    if (myCache.has("sockets")) {
 
-      const socketId = myCache.get("socketId");
-      const io = req.app.get("socketio");
-      io.to(socketId).emit("messagess", result.following);
-    } else {
-      console.log("no socketId");
+      const socketsArr = myCache.get("sockets");
+      console.log(socketsArr);
+      const freeSocketSpace = socketsArr.find((socket) => {
+        return socket.userid === 0;
+      })
+      if (freeSocketSpace === undefined) {
+        console.log("no space free");
+      } else {
+        const socketId = freeSocketSpace.socketid;
+        freeSocketSpace.userid = userId;
+
+        myCache.set("sockets", socketsArr);
+        const io = req.app.get("socketio");
+        io.to(socketId).emit("messagess", result.following);
+      }
     }
   } catch (error) {
-    return res.status(500).send(err);
+    console.log(error);
+    return res.status(500).send(error);
   }
 });
+
 
 module.exports = router;

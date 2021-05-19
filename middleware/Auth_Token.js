@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
+const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 app.use(express.json());
 

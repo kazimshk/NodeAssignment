@@ -45,13 +45,19 @@ app.use("/posts", postRouter);
 server.listen(3000, () => {
   console.log("server is running at 3000 port");
 });
-let count = 0;
+
+const arr =new Array();
+var socketObj= {
+  socketid : 0,
+  userid : 0
+}
+
 io.on("connection", (socket) => {
   console.log("User connected server: " + socket.id);
-  if (count === 0) {      //So that new user can't rewrite the socketid value in cache
-    const socketId = socket.id;
-    myCache.set("socketId", socketId);
-    count++;
-  }
-});
 
+  let userSocket = JSON.parse(JSON.stringify(socketObj));
+  userSocket.socketid = socket.id;
+  arr.push(userSocket);
+  myCache.set("sockets", arr);
+
+});
